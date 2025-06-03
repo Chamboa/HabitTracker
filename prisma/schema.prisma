@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  habits     Habit[]
+  activities Activity[]
+  settings   UserSettings?
+
+  @@map("users")
+}
+
+model Habit {
+  id              String      @id @default(cuid())
+  name            String
+  description     String?
+  category        HabitCategory
+  targetFrequency Int         @default(1)
+  frequencyType   FrequencyType @default(DAILY)
+  reminderTime    String?     // HH:MM format
+  isActive        Boolean     @default(true)
+  color           String      @default("#6366F1")
+  icon            String      @default("target")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions HabitCompletion[]
+
+  @@map("habits")
+}
+
+model HabitCompletion {
+  id          String   @id @default(cuid())
+  habitId     String
+  completedAt DateTime @default(now())
+  notes       String?
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, completedAt])
+  @@map("habit_completions")
+}
+
+model Activity {
+  id          String       @id @default(cuid())
+  name        String
+  type        ActivityType
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int?         // minutes
+  notes       String?
+  isCompleted Boolean      @default(false)
+  color       String       @default("#3B82F6")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activities")
+}
+
+model UserSettings {
+  id                              String  @id @default(cuid())
+  isDarkTheme                     Boolean @default(false)
+  habitRemindersEnabled           Boolean @default(true)
+  activityRemindersEnabled        Boolean @default(true)
+  achievementNotificationsEnabled Boolean @default(true)
+  analyticsEnabled                Boolean @default(true)
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+enum HabitCategory {
+  HEALTH
+  PRODUCTIVITY
+  LEARNING
+  EXERCISE
+  NUTRITION
+  MINDFULNESS
+  SOCIAL
+  PERSONAL
+}
+
+enum FrequencyType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum ActivityType {
+  MEAL
+  EXERCISE
+  WORK
+  BREAK
+  MEETING
+  STUDY
+  PERSONAL
+}
